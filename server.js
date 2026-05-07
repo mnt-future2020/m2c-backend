@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const session = require("express-session");
+const MongoStore = require("connect-mongo");
 const passport = require("./config/passport");
 require("dotenv").config();
 
@@ -72,15 +73,22 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Configure express-session for Google OAuth
+// Configure express-session for Google OAuth (MongoDB-backed store)
 app.use(
   session({
     secret: process.env.JWT_SECRET || "your-secret-key",
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.DATABASE_URL,
+      collectionName: "sessions",
+      ttl: 24 * 60 * 60, // 1 day in seconds
+      autoRemove: "native",
+    }),
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   }),
@@ -281,5 +289,14 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     await prisma.$disconnect();
   });
 }
+
+// Global crash guards — prevent silent process kills on Hostinger
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+});
 
 module.exports = app;
