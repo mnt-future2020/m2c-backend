@@ -17,6 +17,13 @@ const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Early startup log — appears immediately in Hostinger Runtime Logs
+console.log(`🚀 Starting M2C Backend...`);
+console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+console.log(`   PORT: ${PORT}`);
+console.log(`   DATABASE_URL set: ${!!process.env.DATABASE_URL}`);
+console.log(`   JWT_SECRET set: ${!!process.env.JWT_SECRET}`);
+
 // CORS Configuration - must be before helmet
 const allowedOrigins = [
   "http://localhost:3000",
